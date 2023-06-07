@@ -1,24 +1,37 @@
-import pygame as pg
+import pygame as py
 from constants import *                     # get constants and definitions
-from character import Character
+from character import *                     # character and info
+from weapon import Weapon
+from items import Item
 import sys
 
-pg.init()
-
-screen = pg.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pg.display.set_caption("Dungeon Crawler")
-
+py.init()
+screen = py.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+py.display.set_caption("Dungeon Crawler")
 # clock defines frame rate
-clock = pg.time.Clock()
+clock = py.time.Clock()
 
-# define player movement variables
-moving_left = False
-moving_right = False
-moving_up = False
-moving_down = False
+    
+# create player and info
+player = Character(screen, 'elf', 59, 100, 100)
+info = Info(player)
 
-# create player
-player = Character(100, 100)
+# create weapons
+bow = Weapon(screen, 'bow')
+
+# create sprite groups
+damage_text_group = py.sprite.Group()
+arrow_group = py.sprite.Group()
+item_group = py.sprite.Group()
+
+potion = Item(screen, 'potion_red', 200, 200)
+item_group.add(potion)
+coin = Item(screen, 'coin', 400, 400)
+item_group.add(coin)
+
+enemies = []
+enemy = Character(screen, 'skeleton', 100, 400, 200)
+enemies.append(enemy)
 
 # main game loop
 run = True
@@ -27,53 +40,68 @@ while run:
     clock.tick(FPS)
     
     # event handler
-    for event in pg.event.get():
-        if event.type == pg.QUIT:
+    for event in py.event.get():
+        if event.type == py.QUIT:
             run = False
             
-        if event.type == pg.KEYDOWN:
-            if event.key == pg.K_UP:
-                moving_up = True
-            if event.key == pg.K_DOWN:
-                moving_down = True
-            if event.key == pg.K_LEFT:
-                moving_left = True
-            if event.key == pg.K_RIGHT:
-                moving_right = True
+        if event.type == py.KEYDOWN:
+            if event.key == py.K_UP:
+                player.movement['dy'] = -PLAYER_SPEED
+            if event.key == py.K_DOWN:
+                player.movement['dy'] = PLAYER_SPEED
+            if event.key == py.K_LEFT:
+                player.movement['dx'] = -PLAYER_SPEED
+            if event.key == py.K_RIGHT:
+                player.movement['dx'] = PLAYER_SPEED
                 
-        if event.type == pg.KEYUP:
-            if event.key == pg.K_UP:
-                moving_up = False
-            if event.key == pg.K_DOWN:
-                moving_down = False
-            if event.key == pg.K_LEFT:
-                moving_left = False
-            if event.key == pg.K_RIGHT:
-                moving_right = False
+        if event.type == py.KEYUP:
+            if event.key == py.K_UP:
+                player.movement['dy'] = 0
+            if event.key == py.K_DOWN:
+                player.movement['dy'] = 0
+            if event.key == py.K_LEFT:
+                player.movement['dx'] = 0
+            if event.key == py.K_RIGHT:
+                player.movement['dx'] = 0
     
-    
+    # the screen
     screen.fill(BG)
-            
-    # calculate player movement
-    dx = 0
-    dy = 0
-    if moving_right == True:
-        dx = PLAYER_SPEED
-    if moving_left == True:
-        dx = -PLAYER_SPEED
-    if moving_up == True:
-        dy = -PLAYER_SPEED
-    if moving_down == True:
-        dy = PLAYER_SPEED
         
-    # move
-    player.move(dx, dy)
+    # capture movement
+    player.move()
+    
+    # update player
+    for enemy in enemies:
+        enemy.update()
+    player.update()
+    arrow = bow.update(player)
+    if arrow:
+        arrow_group.add(arrow)
+    for arrow in arrow_group:
+        damage, damage_pos = arrow.update(enemies)
+        if damage:
+            damage_text = DamageText(damage_pos.centerx, damage_pos.y, f'{damage}', RED, screen)
+            damage_text_group.add(damage_text)
+    for damage_text in damage_text_group:
+        damage_text.update()
+    for item in item_group:
+        item.update(player)
             
     # draw
-    player.draw(screen)
+    for enemy in enemies:
+        enemy.draw()
+    for item in item_group:
+        item.draw()
+    player.draw()
+    bow.draw()
+    for arrow in arrow_group:
+        arrow.draw()
+    for damage_text in damage_text_group:
+        damage_text.draw()
+    info.draw_info()
     
-    pg.display.update()
+    
+    py.display.update()
             
-pg.quit()
-sys.exit()
-    
+py.quit()
+sys.exit()    
