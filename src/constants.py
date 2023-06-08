@@ -1,21 +1,26 @@
 import pygame as py
 
-# game
+# img scales
+SCALE = 3
+WEAPON_SCALE = 1.5
+ITEM_SCALE = 3
+
+# game 
 FILEPATH = '/home/jad/dungeon_crawler'
 FPS = 60
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 BG = (40, 25, 25)
+TILE_SIZE = 16 * SCALE
+TILE_TYPES = 18
+WORLD_ROWS = 150
+WORLD_COLS = 150
+SCROLL_THRESHOLD = 200
 
-# game mechanics
+# color
 RED = 'Red'
 WHITE = 'White'
 PANEL = (50, 50, 50)
-
-# img scales
-SCALE = 3
-WEAPON_SCALE = 1.5
-ITEM_SCALE = 3
 
 # animations
 MOB_TYPES = ['elf', 'big_demon', 'goblin', 'imp', 'muddy', 'skeleton', 'tiny_zombie']
@@ -41,6 +46,12 @@ def draw_text(surface, text, font, text_col, x, y):
     img = font.render(text, True, text_col)
     surface.blit(img, (x, y))
 
+def draw_grid(surface):
+    for x in range(30):
+        py.draw.line(surface, WHITE, (x * TILE_SIZE, 0), (x * TILE_SIZE, SCREEN_HEIGHT))
+        py.draw.line(surface, WHITE, (0, x * TILE_SIZE), (SCREEN_WIDTH, x * TILE_SIZE))
+
+
 # helper classes
 py.font.init()
 font = py.font.Font(f'{FILEPATH}/assets/fonts/AtariClassic.ttf', 20)
@@ -56,7 +67,10 @@ class DamageText(py.sprite.Sprite):
     def on_init(self):
         self.counter = 0 
        
-    def update(self):
+    def update(self, screen_scroll):
+        # reposition the text based on scroll
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
         # move damage text up
         self.rect.y -= 1
         # delete the counter after a few ms

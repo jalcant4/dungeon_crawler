@@ -65,14 +65,14 @@ class Projectile(py.sprite.Sprite):
         self.dy = -(math.sin(math.radians(self.angle)) * PROJECTILE_SPEED)
        
         
-    def update(self, enemies):
+    def update(self, enemies, screen_scroll):
         # calculate damage
         damage = 0
         damage_pos = None
         
         # reposition based on speed
-        self.rect.x += self.dx
-        self.rect.y += self.dy
+        self.rect.x += screen_scroll[0] + self.dx
+        self.rect.y += screen_scroll[1] + self.dy
         
         # check if arrow is out of bounds
         if self.rect.right < 0 or self.rect.left > SCREEN_WIDTH or self.rect.bottom < 0 or self.rect.top > SCREEN_HEIGHT:

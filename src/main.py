@@ -3,6 +3,8 @@ from constants import *                     # get constants and definitions
 from character import *                     # character and info
 from weapon import Weapon
 from items import Item
+from world import World
+import csv
 import sys
 
 py.init()
@@ -11,27 +13,42 @@ py.display.set_caption("Dungeon Crawler")
 # clock defines frame rate
 clock = py.time.Clock()
 
+# define game variables
+level = 1
+screen_scroll = [0, 0]
     
-# create player and info
-player = Character(screen, 'elf', 59, 100, 100)
-info = Info(player)
+# create world
+world_data = []
+for row in range(WORLD_ROWS):
+    r = [-1] * WORLD_COLS
+    world_data.append(r)
+with open(f'{FILEPATH}/levels/level{level}_data.csv', newline= '') as csvfile:
+    reader= csv.reader(csvfile, delimiter = ",")
+    for x, row in enumerate(reader):
+        for y, tile in enumerate(row):
+            world_data[x][y] = int(tile)
 
+world = World(screen)
+world.process_data(world_data)
+
+# create player and info
+player = world.player
+info = Info(player, level)
 # create weapons
 bow = Weapon(screen, 'bow')
+
+# create enemies
+enemies = world.enemies
 
 # create sprite groups
 damage_text_group = py.sprite.Group()
 arrow_group = py.sprite.Group()
 item_group = py.sprite.Group()
 
-potion = Item(screen, 'potion_red', 200, 200)
-item_group.add(potion)
-coin = Item(screen, 'coin', 400, 400)
-item_group.add(coin)
-
-enemies = []
-enemy = Character(screen, 'skeleton', 100, 400, 200)
-enemies.append(enemy)
+score_coin = Item(screen, 'coin', SCREEN_WIDTH - 115, 23, True)
+item_group.add(score_coin)
+for item in world.item_group:
+    item_group.add(item)
 
 # main game loop
 run = True
@@ -68,26 +85,29 @@ while run:
     screen.fill(BG)
         
     # capture movement
-    player.move()
+    screen_scroll = player.move(world.obstacle_tiles)
     
-    # update player
+    # update
+    world.update(screen_scroll)
     for enemy in enemies:
+        enemy.ai(screen_scroll)
         enemy.update()
     player.update()
     arrow = bow.update(player)
     if arrow:
         arrow_group.add(arrow)
     for arrow in arrow_group:
-        damage, damage_pos = arrow.update(enemies)
+        damage, damage_pos = arrow.update(enemies, screen_scroll)
         if damage:
             damage_text = DamageText(damage_pos.centerx, damage_pos.y, f'{damage}', RED, screen)
             damage_text_group.add(damage_text)
     for damage_text in damage_text_group:
-        damage_text.update()
+        damage_text.update(screen_scroll)
     for item in item_group:
-        item.update(player)
+        item.update(player, screen_scroll)
             
     # draw
+    world.draw()
     for enemy in enemies:
         enemy.draw()
     for item in item_group:
@@ -99,7 +119,7 @@ while run:
     for damage_text in damage_text_group:
         damage_text.draw()
     info.draw_info()
-    
+    score_coin.draw()
     
     py.display.update()
             

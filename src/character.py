@@ -3,15 +3,14 @@ import pygame as py
 from constants import *
 
 class Character:
-    def __init__(self, surface, name, health, x, y):
+    def __init__(self, surface, name, health, x, y, size= 1):
         self.surface = surface
         self.name = name
         # game mechanics
         self.alive = True
         self.health = health
-        
         # rect
-        self.rect = py.Rect(0, 0, 40, 40)                       # x, y, width, length
+        self.rect = py.Rect(0, 0, TILE_SIZE * size, TILE_SIZE * size)                       # x, y, width, length
         self.rect.center = (x, y)
         self.on_init()
     
@@ -38,7 +37,11 @@ class Character:
         self.movement = {'dx': 0, 'dy': 0}
 
             
-    def move(self):
+    def move(self, obstacle_tiles):
+        # scrolling
+        screen_scroll = [0, 0]
+        
+        # change in movement
         dx = self.movement.get('dx')
         dy = self.movement.get('dy')
         
@@ -56,9 +59,45 @@ class Character:
             dx = dx * (math.sqrt(2) / 2)
             dy = dy * (math.sqrt(2) / 2)
         
+        # check if collision with map in x direction
         self.rect.x += dx
+        for obstacle in obstacle_tiles:
+            if obstacle[1].colliderect(self.rect) and dx > 0:
+                self.rect.right = obstacle[1].left
+            elif obstacle[1].colliderect(self.rect) and dx < 0:
+                self.rect.left = obstacle[1].right
         self.rect.y += dy
+        for obstacle in obstacle_tiles:
+            if obstacle[1].colliderect(self.rect) and dy > 0:
+                self.rect.bottom = obstacle[1].top
+            elif obstacle[1].colliderect(self.rect) and dy < 0:
+                self.rect.top = obstacle[1].bottom
 
+        # logic only apllies to player
+        if self.name == 'elf':
+            # update scroll based on player position
+            # move camera left and right
+            if self.rect.right > (SCREEN_WIDTH - SCROLL_THRESHOLD):
+                screen_scroll[0] = (SCREEN_WIDTH - SCROLL_THRESHOLD) - self.rect.right
+                self.rect.right = SCREEN_WIDTH - SCROLL_THRESHOLD
+            if self.rect.left < SCROLL_THRESHOLD:
+                screen_scroll[0] = SCROLL_THRESHOLD - self.rect.left
+                self.rect.left = SCROLL_THRESHOLD
+            # move camera up and down
+            if self.rect.bottom > (SCREEN_HEIGHT - SCROLL_THRESHOLD):
+                screen_scroll[1] = (SCREEN_HEIGHT - SCROLL_THRESHOLD) - self.rect.bottom
+                self.rect.bottom = SCREEN_HEIGHT - SCROLL_THRESHOLD
+            if self.rect.top < SCROLL_THRESHOLD:
+                screen_scroll[1] = SCROLL_THRESHOLD - self.rect.top
+                self.rect.top = SCROLL_THRESHOLD
+                
+        return screen_scroll
+    
+    def ai(self, screen_scroll):
+        # reposition the mobs based on scroll
+        self.rect.x += screen_scroll[0]
+        self.rect.y += screen_scroll[1]
+                
     # Must be called after move    
     def update(self):
         animation_cooldown = 70
@@ -88,8 +127,9 @@ class Character:
 
 # Info class prints information on the character        
 class Info:
-    def __init__(self, character):
+    def __init__(self, character, level):
         self.character = character
+        self.level = level
         self.on_init()
         
     def on_init(self):
@@ -112,5 +152,7 @@ class Info:
                 half_heart_drawn = True
             else:
                 self.surface.blit(self.heart_empty, (10 + i * 50, 0))
+        # draw level
+        draw_text(self.surface, f"LEVEL: {self.level}", font, WHITE, SCREEN_WIDTH / 2, 15)                
         # draw score
-        draw_text(self.surface, f"X:{self.character.score}", font, WHITE,SCREEN_WIDTH - 100, 15)
+        draw_text(self.surface, f"X:{self.character.score}", font, WHITE, SCREEN_WIDTH - 100, 15)

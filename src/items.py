@@ -2,10 +2,11 @@ import pygame as py
 from constants import *
 
 class Item(py.sprite.Sprite):
-    def __init__(self, surface, name, x, y):
+    def __init__(self, surface, name, x, y, dummy = False):
         py.sprite.Sprite.__init__(self)
         self.surface = surface
         self.name = name
+        self.dummy = dummy
         self.on_init(x, y)
         
     def on_init(self, x, y):
@@ -26,7 +27,12 @@ class Item(py.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (x,y)
         
-    def update(self, player):
+    def update(self, player, screen_scroll):
+        # reposition with screen scroll
+        if not self.dummy:
+            self.rect.x += screen_scroll[0]
+            self.rect.y += screen_scroll[1]
+        
         # check to see if player collides
         if self.rect.colliderect(player.rect):
             if self.item_type == 0:
