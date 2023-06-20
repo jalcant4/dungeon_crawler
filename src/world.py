@@ -18,8 +18,7 @@ class World():
         self.player = None
         self.enemies = []
         # item list
-        self.item_group = []
-        
+        self.item_group = []    
         # images
         self.tile_list = []
         for x in range(TILE_TYPES):
@@ -44,7 +43,7 @@ class World():
                 if tile == 7:
                     self.obstacle_tiles.append(tile_data)
                 elif tile == 8:
-                    self.exit_tile = tile
+                    self.exit_tile = tile_data
                 elif tile == 9:
                     coin = Item(self.surface, 'coin', image_x, image_y)
                     self.item_group.append(coin)
@@ -78,7 +77,8 @@ class World():
                     self.enemies.append(enemy)
                     tile_data[0] = self.tile_list[0]
                 elif tile == 17:
-                    enemy = Character(self.surface, 'big_demon', 100, image_x, image_y, 2)
+                    enemy = Character(self.surface, 'big_demon', 100, image_x, image_y, 2, True)
+                    enemy.boss = True
                     self.enemies.append(enemy)
                     tile_data[0] = self.tile_list[0]
                 # add image data to main tiles list

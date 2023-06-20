@@ -1,9 +1,10 @@
 import math
 import pygame as py
 from constants import *
+from weapon import *
 
 class Character:
-    def __init__(self, surface, name, health, x, y, size= 1):
+    def __init__(self, surface, name, health, x, y, size= 1, boss= False):
         self.surface = surface
         self.name = name
         # game mechanics
@@ -12,6 +13,8 @@ class Character:
         # rect
         self.rect = py.Rect(0, 0, TILE_SIZE * size, TILE_SIZE * size)                       # x, y, width, length
         self.rect.center = (x, y)
+        # is boss?
+        self.boss= boss
         self.on_init()
     
     def on_init(self):
@@ -19,6 +22,8 @@ class Character:
         self.score = 0
         # set up timer
         self.update_time = py.time.get_ticks()
+        self.hit = False
+        self.last_hit_time= py.time.get_ticks()
         # set up the animation dictionary
         self.animation_dict = {}
         for type in ANIMATION_TYPES:
@@ -35,11 +40,15 @@ class Character:
         self.image = self.animation_dict.get(self.animation_type)[self.frame_index]
         # set up the movement
         self.movement = {'dx': 0, 'dy': 0}
+        # set up game mechanics
+        self.stunned = False
+        self.last_attack = py.time.get_ticks()
 
             
-    def move(self, obstacle_tiles):
-        # scrolling
+    def move(self, obstacle_tiles, exit_tile= None):
+        # game mechanics
         screen_scroll = [0, 0]
+        level_complete = False
         
         # change in movement
         dx = self.movement.get('dx')
@@ -75,6 +84,11 @@ class Character:
 
         # logic only apllies to player
         if self.name == 'elf':
+            # ensure player is close to the center of exit
+            if exit_tile[1].colliderect(self.rect):
+                exit_dist= math.sqrt(((self.rect.centerx - exit_tile[1].centerx) ** 2) + ((self.rect.centery - exit_tile[1].centery) ** 2))
+                if exit_dist < 20:
+                    level_complete = True
             # update scroll based on player position
             # move camera left and right
             if self.rect.right > (SCREEN_WIDTH - SCROLL_THRESHOLD):
@@ -91,13 +105,64 @@ class Character:
                 screen_scroll[1] = SCROLL_THRESHOLD - self.rect.top
                 self.rect.top = SCROLL_THRESHOLD
                 
-        return screen_scroll
+        return screen_scroll, level_complete
     
-    def ai(self, screen_scroll):
-        # reposition the mobs based on scroll
+    def ai(self, player, obstacle_tiles, screen_scroll):
+        enemy_proj = None
+        stun_cooldown = 150
+        clipped_line= ()
+        # reset movement
+        self.movement['dx'] = 0
+        self.movement['dy'] = 0
+        # reposition the enemy based on scroll
         self.rect.x += screen_scroll[0]
         self.rect.y += screen_scroll[1]
-                
+        # line of sight from enemy to player
+        line_of_sight= ((self.rect.centerx, self.rect.centery), (player.rect.centerx, player.rect.centery))
+        # check if line of sight passes through an obstacle
+        for obstacle in obstacle_tiles:
+            if obstacle[1].clipline(line_of_sight):
+                clipped_line= obstacle[1].clipline(line_of_sight)
+        # check distance to player
+        dist = math.sqrt(((self.rect.centerx - player.rect.centerx) ** 2) + ((self.rect.centery - player.rect.centery) ** 2))
+        if not clipped_line and dist > ENEMY_RANGE:
+        # homing type ai
+            if self.rect.centerx > player.rect.centerx:
+                self.movement['dx'] -= ENEMY_SPEED
+            if self.rect.centerx < player.rect.centerx:
+                self.movement['dx'] = ENEMY_SPEED
+            if self.rect.centery > player.rect.centery:
+                self.movement['dy'] -= ENEMY_SPEED
+            if self.rect.centery < player.rect.centery:
+                self.movement['dy'] = ENEMY_SPEED
+        # enemy is stunned
+        if self.alive and not self.stunned:
+            # move     
+            self.move(obstacle_tiles)
+            # attack player
+            if dist < ATTACK_RANGE and not player.hit:
+                player.hit = True
+                player.last_hit_time = py.time.get_ticks()
+                player.health -= 10
+            # boss shoot fierballes
+            enemy_proj_cooldown = 650
+            if self.boss and dist < 500:
+                if py.time.get_ticks() - self.last_attack >= enemy_proj_cooldown:
+                    enemy_proj = Enemy_Projectile(self.surface, 'fireball', self.rect.centerx, self.rect.centery, player.rect.centerx, player.rect.centery)
+                    self.last_attack = py.time.get_ticks()
+        # check if hit
+        if self.alive and self.hit:
+            self.hit = False
+            self.last_hit_time = py.time.get_ticks()
+            self.stunned = True
+            self.movement['dx'] = 0
+            self.movement['dy'] = 0
+        # reset cooldown
+        if self.alive and (py.time.get_ticks() - self.last_hit_time) > stun_cooldown:
+            self.stunned = False
+        
+        return enemy_proj    
+                    
     # Must be called after move    
     def update(self):
         animation_cooldown = 70
@@ -105,7 +170,10 @@ class Character:
         if self.health <= 0:
             self.health = 0
             self.alive = False
-        
+            self.animation_type = ANIMATION_TYPES[0]
+        # check last hit time
+        if (py.time.get_ticks()- self.last_hit_time) >= HIT_COOLDOWN:
+            self.hit = False
         # update image
         self.image = self.animation_dict.get(self.animation_type)[self.frame_index]
         # check if enough time has passed since the last update

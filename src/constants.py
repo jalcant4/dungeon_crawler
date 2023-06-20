@@ -3,7 +3,9 @@ import pygame as py
 # img scales
 SCALE = 3
 WEAPON_SCALE = 1.5
+ENEMY_PROJ_SCALE = 1
 ITEM_SCALE = 3
+BUTTON_SCALE = 1
 
 # game 
 FILEPATH = '/home/jad/dungeon_crawler'
@@ -20,7 +22,10 @@ SCROLL_THRESHOLD = 200
 # color
 RED = 'Red'
 WHITE = 'White'
+BLACK = (0, 0, 0)
+PINK = (235, 65, 54)
 PANEL = (50, 50, 50)
+MENU_BG = (130, 0, 0)
 
 # animations
 MOB_TYPES = ['elf', 'big_demon', 'goblin', 'imp', 'muddy', 'skeleton', 'tiny_zombie']
@@ -29,6 +34,10 @@ ANIMATION_COUNT = 4
 
 # character constants
 PLAYER_SPEED = 5
+HIT_COOLDOWN = 400
+ENEMY_SPEED = 3
+ENEMY_RANGE = 50
+ATTACK_RANGE = 60
 OFFSET = 12
 MAX_HEALTH = 5
 HEART_HEALTH = 20
@@ -36,6 +45,7 @@ HEART_HEALTH = 20
 # weapon constants
 SHOT_COOLDOWN = 300
 PROJECTILE_SPEED = 7.5
+ENEMY_PROJ_SPEED = 4
 
 
 # helper methods
@@ -53,6 +63,33 @@ def draw_grid(surface):
 
 
 # helper classes
+class ScreenFade():
+    def __init__(self, surface, direction, color, speed):
+        self.surface = surface
+        self.direction = direction
+        self.color = color
+        self.speed = speed
+        self.on_init()
+        
+    def on_init(self):
+        self.fade_counter = 0
+        
+    def fade(self):
+        fade_complete = False
+        self.fade_counter += self.speed
+        # whole screen fade
+        if self.direction == 1:
+            py.draw.rect(self.surface, self.color, (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+            py.draw.rect(self.surface, self.color, (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+            py.draw.rect(self.surface, self.color, (0, 0- self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+            py.draw.rect(self.surface, self.color, (0, SCREEN_HEIGHT // 2 + self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
+        # vertical screen fade down
+        if self.direction == 2:
+            py.draw.rect(self.surface, self.color, (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
+        if self.fade_counter >= SCREEN_WIDTH:
+            fade_complete = True
+        return fade_complete
+
 py.font.init()
 font = py.font.Font(f'{FILEPATH}/assets/fonts/AtariClassic.ttf', 20)
 class DamageText(py.sprite.Sprite):
