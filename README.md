@@ -1,9 +1,7 @@
-# dungeon_crawler
-
-Dungeon Crawler Game Development with Pygame
+# Dungeon Crawler Game Development with Pygame
 Welcome to the Dungeon Crawler Game Development course! In this course, you will learn how to create a dungeon crawler game from scratch using the popular Pygame module. Along the way, you will also gain a solid understanding of Python fundamentals.
 
-Course Overview
+# Course Overview
 The course is designed to take you from the basics to more advanced topics, gradually building your skills and knowledge. Here's what you can expect to learn:
 
 Introduction to Pygame and a refresher on Python fundamentals
@@ -16,10 +14,5 @@ Implementing collision detection between characters and the game environment
 Starter Files and Level Editor
 To ensure a smooth start, the course provides a set of starter files that help you set up the correct folder structure from the beginning. Additionally, a custom level editor is included, allowing you to modify existing levels and even create your own.
 
-Course Requirements
+# Course Requirements
 To get the most out of this course, it is recommended that you have some knowledge and familiarity with Python. This will help you grasp the concepts and techniques more easily.
-
-Who Should Take This Course
-This course is ideal for beginner Python developers who are interested in game development. Whether you are new to Python or want to reinforce your skills, this course will guide you through the process of creating a fully functional dungeon crawler game.
-
-Get ready to embark on an exciting journey into game development with Pygame!
